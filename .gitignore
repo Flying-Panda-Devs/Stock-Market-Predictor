@@ -208,3 +208,6 @@ __marimo__/
 
 # Venv
 stocks/*
+
+# Cache
+working_data/trained_models/*
