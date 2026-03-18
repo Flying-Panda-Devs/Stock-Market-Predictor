@@ -1,6 +1,6 @@
 from alive_progress import alive_bar
 print('Importing modules...')
-with alive_bar(7) as bar:
+with alive_bar(8) as bar:
     import torch
     bar()
     import pandas as pd
@@ -15,6 +15,23 @@ with alive_bar(7) as bar:
     bar()
     import os
     bar()
+    import argparse
+    bar()
+
+parser = argparse.ArgumentParser(
+    prog='stock-predictor'
+)
+parser.add_argument('-r','--reset',action='store_true')
+parser.add_argument('-c','--cache',action='store_true')
+parser.add_argument('epochs')
+args = parser.parse_args()
+
+if args.reset:
+    print('Reset flag detected, deleting all cached models...')
+    with alive_bar(len(os.listdir('working_data/trained_models/'))) as bar:
+        for file in os.listdir('working_data/trained_models/'):
+            bar()
+            os.remove(f'working_data/trained_models/{file}')
 
 def convertDateToInt(date:str):
     return datetime.strptime(date,'%Y-%m-%d').timestamp()
@@ -26,7 +43,7 @@ per_stock_data = dict()
 print('Loading and transforming static data...')
 with alive_bar(len(stock_names)) as bar:
     for stock_name in stock_names:
-        per_stock_data[stock_name] = all_stock_data[all_stock_data['Name'] == stock_name].drop(columns=['Name','date'])
+        per_stock_data[stock_name] = all_stock_data[all_stock_data['Name'] == stock_name].drop(columns=['Name','date','volume'])
         #per_stock_data[stock_name]['date'] = per_stock_data[stock_name]['date'].apply(np.vectorize(convertDateToInt))
         per_stock_data[stock_name] = per_stock_data[stock_name].astype(np.float32)
         bar()
@@ -45,39 +62,46 @@ with alive_bar(len(stock_names)) as bar:
     for stock_name in stock_names:
         if os.path.exists(f'working_data/trained_models/{stock_name}.pt'):
             model = nn.Sequential(
-                nn.Linear(5, 500),
-                nn.ReLU(),
-                nn.Linear(500, 12),
-                nn.ReLU(),
-                nn.Linear(12, 5),
+                nn.Linear(4, 500),
+                nn.BatchNorm1d(500),
+                nn.LeakyReLU(),
+                nn.Linear(500,120),
+                nn.BatchNorm1d(120),
+                nn.LeakyReLU(),
+                nn.Linear(120,12),
+                nn.BatchNorm1d(12),
+                nn.Linear(12, 4),
                 nn.ReLU()
             )
             model.load_state_dict(torch.load(f'working_data/trained_models/{stock_name}.pt', weights_only = True))
             models[stock_name] = model
         bar()
 print('All cached models loaded.')
-stock_name = input('Stock name: ')
-print('Loading model...')
-if not (stock_name in list(models.keys())):
-    print('Model not in cache.')
-    # Define the model using nn.Sequential
-    model = nn.Sequential(
-        nn.Linear(5, 500),
-        nn.LeakyReLU(),
-        nn.Linear(500, 12),
-        nn.LeakyReLU(),
-        nn.Linear(12, 5),
-        nn.LeakyReLU()
-    )
+if args.cache:
+    for stock_name in stock_names
+        if not (stock_name in list(models.keys())): # FIX PRECACHE
+        print('Model not in cache.')
+        # Define the model using nn.Sequential
+        model = nn.Sequential(
+            nn.Linear(4, 500),
+            nn.BatchNorm1d(500),
+            nn.LeakyReLU(),
+            nn.Linear(500,120),
+            nn.BatchNorm1d(120),
+            nn.LeakyReLU(),
+            nn.Linear(120,12),
+            nn.BatchNorm1d(12),
+            nn.Linear(12, 4),
+            nn.ReLU()
+        )
 
-    # Define loss function and optimizer
-    criterion = nn.MSELoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.01)  
+        # Define loss function and optimizer
+        criterion = nn.MSELoss()
+        optimizer = optim.Adam(model.parameters(), lr=0.01)  
 
-    # Train the model for 500 epochs
-    print('Training new model...')
-    with alive_bar(5000) as bar:
-        for epoch in range(5000):  
+        # Train the model for 500 epochs
+        print('Training new model...')
+        for epoch in range(int(args.epochs)):  
             model.train()  # Set the model to training mode
             optimizer.zero_grad()  # Zero the gradients for iteration
             outputs = model(tensors['input'][stock_name])  # Compute predictions
@@ -85,18 +109,55 @@ if not (stock_name in list(models.keys())):
             loss.backward()  # Compute the gradient of the loss
             optimizer.step()  # Optimize the model parameters
             bar()
-    models[stock_name] = model
-    print('Caching model...')
-    torch.save(model.state_dict(),f'working_data/trained_models/{stock_name}.pt')
+        models[stock_name] = model
+        print('Caching model...')
+        torch.save(model.state_dict(),f'working_data/trained_models/{stock_name}.pt')
 else:
-    print('Model in cache.')
-active_model = models[stock_name]
-active_model.eval()
-print('Model loaded. Ready for evaluation.')
-with torch.no_grad():
-    new_input = torch.tensor([[55.025001525878906,
-                        55.422500610351562,         54.209999084472656,
-                        54.244998931884766,    7647018.000000000000000]],dtype=torch.float32)
-    prediction = active_model(new_input)
-    print('Evaluation complete. Result:')
-    print(prediction)
+    stock_name = input('Stock name: ')
+    print('Loading model...')
+    if not (stock_name in list(models.keys())):
+        print('Model not in cache.')
+        # Define the model using nn.Sequential
+        model = nn.Sequential(
+            nn.Linear(4, 500),
+            nn.BatchNorm1d(500),
+            nn.LeakyReLU(),
+            nn.Linear(500,120),
+            nn.BatchNorm1d(120),
+            nn.LeakyReLU(),
+            nn.Linear(120,12),
+            nn.BatchNorm1d(12),
+            nn.Linear(12, 4),
+            nn.ReLU()
+        )
+
+        # Define loss function and optimizer
+        criterion = nn.MSELoss()
+        optimizer = optim.Adam(model.parameters(), lr=0.01)  
+
+        # Train the model for 500 epochs
+        print('Training new model...')
+        with alive_bar(int(args.epochs)) as bar:
+            for epoch in range(int(args.epochs)):  
+                model.train()  # Set the model to training mode
+                optimizer.zero_grad()  # Zero the gradients for iteration
+                outputs = model(tensors['input'][stock_name])  # Compute predictions
+                loss = criterion(outputs, tensors['output'][stock_name])  # Compute the loss
+                loss.backward()  # Compute the gradient of the loss
+                optimizer.step()  # Optimize the model parameters
+                bar()
+        models[stock_name] = model
+        print('Caching model...')
+        torch.save(model.state_dict(),f'working_data/trained_models/{stock_name}.pt')
+    else:
+        print('Model in cache.')
+    active_model = models[stock_name]
+    active_model.eval()
+    print('Model loaded. Ready for evaluation.')
+    with torch.no_grad():
+        new_input = torch.tensor([[55.025001525878906,
+                            55.422500610351562,         54.209999084472656,
+                            54.244998931884766]],dtype=torch.float32)
+        prediction = active_model(new_input)
+        print('Evaluation complete. Result:')
+        print(prediction)
