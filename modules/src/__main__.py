@@ -121,10 +121,10 @@ active_model.eval()
 print('Model loaded. Ready for evaluation.')
 with torch.no_grad():
     if earliest < stock_date < latest:
-        new_input = torch.from_numpy(per_stock_data[stock_name].loc[per_stock_data[stock_name]['date'] == stock_date].to_numpy())
+        new_input = torch.from_numpy(per_stock_data[stock_name].loc[per_stock_data[stock_name]['date'] == stock_date].drop(columns=['date']).to_numpy())
         diff = 0
     else:
-        new_input = torch.from_numpy(per_stock_data[stock_name].loc[per_stock_data[stock_name]['date'] == latest].to_numpy())
+        new_input = torch.from_numpy(per_stock_data[stock_name].loc[per_stock_data[stock_name]['date'] == latest].drop(columns=['date']).to_numpy())
         diff = datetime.fromtimestamp(stock_date) - datetime.fromtimestamp(latest)
         diff = diff.days
     if diff != 0:
