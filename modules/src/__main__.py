@@ -18,7 +18,7 @@ with alive_bar(8) as bar:
     import argparse
     bar()
 def convertDateToInt(date:str):
-    return datetime.strptime(date,'%Y-%m-%d')
+    return datetime.strptime(date,'%Y-%m-%d').timestamp()
 earliest = convertDateToInt('2013-02-08')
 latest = convertDateToInt('2018-02-07')
 parser = argparse.ArgumentParser(
