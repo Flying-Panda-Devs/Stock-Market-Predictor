@@ -85,8 +85,8 @@ while True:
         print('Model not in cache.')
         # Define the model using nn.Sequential
         model = nn.Sequential(
-            nn.Linear(4, 500),
-            nn.BatchNorm1d(500),
+            nn.Linear(4, 5000),
+            nn.BatchNorm1d(5000),
             nn.LeakyReLU(),
             nn.Linear(500,120),
             nn.BatchNorm1d(120),
