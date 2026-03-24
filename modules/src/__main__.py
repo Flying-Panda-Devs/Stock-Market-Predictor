@@ -18,7 +18,9 @@ with alive_bar(8) as bar:
     import argparse
     bar()
 def convertDateToInt(date:str):
-    return datetime.strptime(date,'%Y-%m-%d').timestamp()
+    return datetime.strptime(date,'%Y-%m-%d')
+earliest = convertDateToInt('2013-02-08')
+latest = convertDateToInt('2018-02-07')
 parser = argparse.ArgumentParser(
     prog='stock-predictor'
 )
@@ -31,7 +33,8 @@ if args.reset:
     with alive_bar(len(os.listdir('working_data/trained_models/'))) as bar:
         for file in os.listdir('working_data/trained_models/'):
             bar()
-            os.remove(f'working_data/trained_models/{file}')
+            if '.pt' in file:
+                os.remove(f'working_data/trained_models/{file}')
             
 torch.set_printoptions(precision=15,sci_mode=False)
 all_stock_data = pd.read_csv('static_data/all_stocks_5yr.csv')
@@ -51,7 +54,7 @@ print('Generating tensors...')
 with alive_bar(len(stock_names)) as bar:
     for stock_name in stock_names: # some of the tensors are weirdly small. check stock data.
         tensors['input'][stock_name] = torch.from_numpy(per_stock_data[stock_name].drop(per_stock_data[stock_name].tail(1).index).to_numpy())
-        tensors['output'][stock_name] = torch.from_numpy(per_stock_data[stock_name].drop(per_stock_data[stock_name].head(1).index).drop(columns=['high','low']).to_numpy())
+        tensors['output'][stock_name] = torch.from_numpy(per_stock_data[stock_name].drop(per_stock_data[stock_name].head(1).index).to_numpy())
         bar()
 print('Loading cached models...')
 models = dict()
@@ -67,7 +70,7 @@ with alive_bar(len(stock_names)) as bar:
                 nn.LeakyReLU(),
                 nn.Linear(120,12),
                 nn.BatchNorm1d(12),
-                nn.Linear(12, 2),
+                nn.Linear(12,4),
                 nn.ReLU()
             )
             model.load_state_dict(torch.load(f'working_data/trained_models/{stock_name}.pt', weights_only = True))
@@ -89,7 +92,7 @@ if not (stock_name in list(models.keys())):
         nn.LeakyReLU(),
         nn.Linear(120,12),
         nn.BatchNorm1d(12),
-        nn.Linear(12, 2),
+        nn.Linear(12,4),
         nn.ReLU()
     )
 
@@ -117,9 +120,10 @@ active_model = models[stock_name]
 active_model.eval()
 print('Model loaded. Ready for evaluation.')
 with torch.no_grad():
-    new_input = torch.tensor([[55.025001525878906,
-                        55.422500610351562,         54.209999084472656,
-                        54.244998931884766]],dtype=torch.float32)
+    if earliest < stock_date < latest:
+        new_input = torch.from_numpy(per_stock_data[stock_name].loc[per_stock_data[stock_name]['date'] == datetime.strftime(stock_date,'%Y-%m-%d')])
+    else:
+        new_input = torch.from_numpy(per_stock_data[stock_name].loc[per_stock_data[stock_name]['date'] == datetime.strftime(latest,'%Y-%m-%d')])
     prediction = active_model(new_input)
     print('Evaluation complete. Result:')
     print(prediction)
