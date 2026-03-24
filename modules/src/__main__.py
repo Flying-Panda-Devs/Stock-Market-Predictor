@@ -87,10 +87,10 @@ while True:
         model = nn.Sequential(
             nn.Linear(4, 5000),
             nn.BatchNorm1d(5000),
-            nn.LeakyReLU(),
+            nn.LeakyReLU(-0.1),
             nn.Linear(5000,120),
             nn.BatchNorm1d(120),
-            nn.LeakyReLU(),
+            nn.LeakyReLU(-0.1),
             nn.Linear(120,12),
             nn.BatchNorm1d(12),
             nn.Linear(12,4),
