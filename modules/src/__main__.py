@@ -77,61 +77,62 @@ with alive_bar(len(stock_names)) as bar:
             models[stock_name] = model
         bar()
 print('All cached models loaded.')
-stock_name = input('Stock name: ')
-stock_date = convertDateToInt(input('Target date (YYYY-MM-DD): '))
-print('Loading model...')
-if not (stock_name in list(models.keys())):
-    print('Model not in cache.')
-    # Define the model using nn.Sequential
-    model = nn.Sequential(
-        nn.Linear(4, 500),
-        nn.BatchNorm1d(500),
-        nn.LeakyReLU(),
-        nn.Linear(500,120),
-        nn.BatchNorm1d(120),
-        nn.LeakyReLU(),
-        nn.Linear(120,12),
-        nn.BatchNorm1d(12),
-        nn.Linear(12,4),
-        nn.ReLU()
-    )
+while True:
+    stock_name = input('Stock name: ')
+    stock_date = convertDateToInt(input('Target date (YYYY-MM-DD): '))
+    print('Loading model...')
+    if not (stock_name in list(models.keys())):
+        print('Model not in cache.')
+        # Define the model using nn.Sequential
+        model = nn.Sequential(
+            nn.Linear(4, 500),
+            nn.BatchNorm1d(500),
+            nn.LeakyReLU(),
+            nn.Linear(500,120),
+            nn.BatchNorm1d(120),
+            nn.LeakyReLU(),
+            nn.Linear(120,12),
+            nn.BatchNorm1d(12),
+            nn.Linear(12,4),
+            nn.ReLU()
+        )
 
-    # Define loss function and optimizer
-    criterion = nn.MSELoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.01)  
+        # Define loss function and optimizer
+        criterion = nn.MSELoss()
+        optimizer = optim.Adam(model.parameters(), lr=0.01)  
 
-    # Train the model for 500 epochs
-    print('Training new model...')
-    with alive_bar(int(args.epochs)) as bar:
-        for epoch in range(int(args.epochs)):  
-            model.train()  # Set the model to training mode
-            optimizer.zero_grad()  # Zero the gradients for iteration
-            outputs = model(tensors['input'][stock_name])  # Compute predictions
-            loss = criterion(outputs, tensors['output'][stock_name])  # Compute the loss
-            loss.backward()  # Compute the gradient of the loss
-            optimizer.step()  # Optimize the model parameters
-            bar()
-    models[stock_name] = model
-    print('Caching model...')
-    torch.save(model.state_dict(),f'working_data/trained_models/{stock_name}.pt')
-else:
-    print('Model in cache.')
-active_model = models[stock_name]
-active_model.eval()
-print('Model loaded. Ready for evaluation.')
-with torch.no_grad():
-    if earliest < stock_date < latest:
-        new_input = torch.from_numpy(per_stock_data[stock_name].loc[per_stock_data[stock_name]['date'] == stock_date].drop(columns=['date']).to_numpy())
-        diff = 0
+        # Train the model for 500 epochs
+        print('Training new model...')
+        with alive_bar(int(args.epochs)) as bar:
+            for epoch in range(int(args.epochs)):  
+                model.train()  # Set the model to training mode
+                optimizer.zero_grad()  # Zero the gradients for iteration
+                outputs = model(tensors['input'][stock_name])  # Compute predictions
+                loss = criterion(outputs, tensors['output'][stock_name])  # Compute the loss
+                loss.backward()  # Compute the gradient of the loss
+                optimizer.step()  # Optimize the model parameters
+                bar()
+        models[stock_name] = model
+        print('Caching model...')
+        torch.save(model.state_dict(),f'working_data/trained_models/{stock_name}.pt')
     else:
-        new_input = torch.from_numpy(per_stock_data[stock_name].loc[per_stock_data[stock_name]['date'] == latest].drop(columns=['date']).to_numpy())
-        diff = datetime.fromtimestamp(stock_date) - datetime.fromtimestamp(latest)
-        diff = diff.days
-    if diff != 0:
-        for i in range(diff):
+        print('Model in cache.')
+    active_model = models[stock_name]
+    active_model.eval()
+    print('Model loaded. Ready for evaluation.')
+    with torch.no_grad():
+        if earliest < stock_date < latest:
+            new_input = torch.from_numpy(per_stock_data[stock_name].loc[per_stock_data[stock_name]['date'] == stock_date].drop(columns=['date']).to_numpy())
+            diff = 0
+        else:
+            new_input = torch.from_numpy(per_stock_data[stock_name].loc[per_stock_data[stock_name]['date'] == latest].drop(columns=['date']).to_numpy())
+            diff = datetime.fromtimestamp(stock_date) - datetime.fromtimestamp(latest)
+            diff = diff.days
+        if diff != 0:
+            for i in range(diff):
+                prediction = active_model(new_input)
+                new_input = prediction
+        else:
             prediction = active_model(new_input)
-            new_input = prediction
-    else:
-        prediction = active_model(new_input)
-    print('Evaluation complete. Result:')
-    print(prediction)
+        print('Evaluation complete. Result:')
+        print(prediction)
