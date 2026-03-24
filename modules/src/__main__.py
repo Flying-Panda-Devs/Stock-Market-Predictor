@@ -62,10 +62,10 @@ with alive_bar(len(stock_names)) as bar:
     for stock_name in stock_names:
         if os.path.exists(f'working_data/trained_models/{stock_name}.pt'):
             model = nn.Sequential(
-                nn.Linear(4, 500),
-                nn.BatchNorm1d(500),
+                nn.Linear(4, 5000),
+                nn.BatchNorm1d(5000),
                 nn.LeakyReLU(),
-                nn.Linear(500,120),
+                nn.Linear(5000,120),
                 nn.BatchNorm1d(120),
                 nn.LeakyReLU(),
                 nn.Linear(120,12),
@@ -88,7 +88,7 @@ while True:
             nn.Linear(4, 5000),
             nn.BatchNorm1d(5000),
             nn.LeakyReLU(),
-            nn.Linear(500,120),
+            nn.Linear(5000,120),
             nn.BatchNorm1d(120),
             nn.LeakyReLU(),
             nn.Linear(120,12),
