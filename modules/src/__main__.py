@@ -44,8 +44,8 @@ print('Loading and transforming static data...')
 with alive_bar(len(stock_names)) as bar:
     for stock_name in stock_names:
         per_stock_data[stock_name] = all_stock_data[all_stock_data['Name'] == stock_name].drop(columns=['Name','volume'])
-        #per_stock_data[stock_name]['date'] = per_stock_data[stock_name]['date'].apply(np.vectorize(convertDateToInt))
-        #per_stock_data[stock_name] = per_stock_data[stock_name].astype(np.float32)
+        per_stock_data[stock_name]['date'] = per_stock_data[stock_name]['date'].apply(np.vectorize(convertDateToInt))
+        per_stock_data[stock_name] = per_stock_data[stock_name].astype(np.float32)
         bar()
 tensors = dict()
 tensors['input'] = dict()
@@ -121,11 +121,17 @@ active_model.eval()
 print('Model loaded. Ready for evaluation.')
 with torch.no_grad():
     if earliest < stock_date < latest:
-        new_input = torch.from_numpy(per_stock_data[stock_name].loc[per_stock_data[stock_name]['date'] == datetime.strftime(stock_date,'%Y-%m-%d')])
-
+        new_input = torch.from_numpy(per_stock_data[stock_name].loc[per_stock_data[stock_name]['date'] == stock_date])
+        diff = 0
     else:
-        new_input = torch.from_numpy(per_stock_data[stock_name].loc[per_stock_data[stock_name]['date'] == datetime.strftime(latest,'%Y-%m-%d')])
-    prediction = active_model(new_input)
+        new_input = torch.from_numpy(per_stock_data[stock_name].loc[per_stock_data[stock_name]['date'] == latest])
+        diff = stock_date - latest
+        diff = diff.days
+    if diff != 0:
+        for i in range(diff):
+            prediction = active_model(new_input)
+            new_input = prediction
+    else:
+        prediction = active_model(new_input)
     print('Evaluation complete. Result:')
     print(prediction)
-    
