@@ -210,4 +210,4 @@ __marimo__/
 stocks/*
 
 # Cache
-working_data/trained_models/*
+working_data/trained_models/*.pt
