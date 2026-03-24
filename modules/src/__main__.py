@@ -43,7 +43,7 @@ per_stock_data = dict()
 print('Loading and transforming static data...')
 with alive_bar(len(stock_names)) as bar:
     for stock_name in stock_names:
-        per_stock_data[stock_name] = all_stock_data[all_stock_data['Name'] == stock_name].drop(columns=['Name','date','volume'])
+        per_stock_data[stock_name] = all_stock_data[all_stock_data['Name'] == stock_name].drop(columns=['Name','volume'])
         #per_stock_data[stock_name]['date'] = per_stock_data[stock_name]['date'].apply(np.vectorize(convertDateToInt))
         per_stock_data[stock_name] = per_stock_data[stock_name].astype(np.float32)
         bar()
@@ -53,8 +53,8 @@ tensors['output'] = dict()
 print('Generating tensors...')
 with alive_bar(len(stock_names)) as bar:
     for stock_name in stock_names: # some of the tensors are weirdly small. check stock data.
-        tensors['input'][stock_name] = torch.from_numpy(per_stock_data[stock_name].drop(per_stock_data[stock_name].tail(1).index).to_numpy())
-        tensors['output'][stock_name] = torch.from_numpy(per_stock_data[stock_name].drop(per_stock_data[stock_name].head(1).index).to_numpy())
+        tensors['input'][stock_name] = torch.from_numpy(per_stock_data[stock_name].drop(per_stock_data[stock_name].tail(1).index).drop(columns=['date']).to_numpy())
+        tensors['output'][stock_name] = torch.from_numpy(per_stock_data[stock_name].drop(per_stock_data[stock_name].head(1).index).drop(columns=['date']).to_numpy())
         bar()
 print('Loading cached models...')
 models = dict()
@@ -127,3 +127,4 @@ with torch.no_grad():
     prediction = active_model(new_input)
     print('Evaluation complete. Result:')
     print(prediction)
+    
