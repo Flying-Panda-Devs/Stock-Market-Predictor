@@ -125,7 +125,7 @@ with torch.no_grad():
         diff = 0
     else:
         new_input = torch.from_numpy(per_stock_data[stock_name].loc[per_stock_data[stock_name]['date'] == latest].to_numpy())
-        diff = stock_date - latest
+        diff = datetime.fromtimestamp(stock_date) - datetime.fromtimestamp(latest)
         diff = diff.days
     if diff != 0:
         for i in range(diff):
