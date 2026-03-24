@@ -116,7 +116,7 @@ active_model = models[stock_name]
 active_model.eval()
 print('Model loaded. Ready for evaluation.')
 with torch.no_grad():
-    new_input = torch.tensor([[55.025001525878906,
+    new_input = torch.tensor([[1360281600, 55.025001525878906,
                         55.422500610351562,         54.209999084472656,
                         54.244998931884766]],dtype=torch.float32)
     prediction = active_model(new_input)
