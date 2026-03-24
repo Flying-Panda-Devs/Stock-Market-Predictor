@@ -17,7 +17,8 @@ with alive_bar(8) as bar:
     bar()
     import argparse
     bar()
-
+def convertDateToInt(date:str):
+    return datetime.strptime(date,'%Y-%m-%d').timestamp()
 parser = argparse.ArgumentParser(
     prog='stock-predictor'
 )
@@ -40,6 +41,7 @@ print('Loading and transforming static data...')
 with alive_bar(len(stock_names)) as bar:
     for stock_name in stock_names:
         per_stock_data[stock_name] = all_stock_data[all_stock_data['Name'] == stock_name].drop(columns=['Name','volume'])
+        per_stock_data[stock_name]['date'] = per_stock_data[stock_name]['date'].apply(np.vectorize(convertDateToInt))
         per_stock_data[stock_name] = per_stock_data[stock_name].astype(np.float32)
         bar()
 tensors = dict()
